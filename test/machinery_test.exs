@@ -180,13 +180,11 @@ defmodule MachineryTest do
              Machinery.transition_to(struct, TestStateMachine, "completed")
   end
 
-  @tag :capture_log
   test "Implict rescue on the guard clause internals should raise any other excepetion not strictly related to missing guard_tranistion/2 existence" do
     wrong_struct = %TestStruct{my_state: "created", force_exception: true}
 
-    assert_raise UndefinedFunctionError, fn ->
-      Machinery.transition_to(wrong_struct, TestStateMachineWithGuard, "completed")
-    end
+    assert {:error, _cause} =
+             Machinery.transition_to(wrong_struct, TestStateMachineWithGuard, "completed")
   end
 
   test "after_transition/2 and before_transition/2 callbacks should be automatically executed" do
@@ -200,13 +198,9 @@ defmodule MachineryTest do
     assert completed_struct.missing_fields == false
   end
 
-  @tag :capture_log
   test "Implict rescue on the callbacks internals should raise any other excepetion not strictly related to missing callbacks_fallback/2 existence" do
     wrong_struct = %TestStruct{my_state: "created", force_exception: true}
-
-    assert_raise UndefinedFunctionError, fn ->
-      Machinery.transition_to(wrong_struct, TestStateMachine, "partial")
-    end
+    assert {:error, _cause} = Machinery.transition_to(wrong_struct, TestStateMachine, "partial")
   end
 
   test "Persist function should be called after the transition" do
@@ -214,33 +208,21 @@ defmodule MachineryTest do
     assert {:ok, _} = Machinery.transition_to(struct, TestStateMachine, "completed")
   end
 
-  @tag :capture_log
   test "Persist function should still raise errors if not related to the existence of persist/1 method" do
     wrong_struct = %TestStruct{my_state: "created", force_exception: true}
-
-    assert_raise UndefinedFunctionError, fn ->
-      Machinery.transition_to(wrong_struct, TestStateMachine, "completed")
-    end
+    assert {:error, _cause} = Machinery.transition_to(wrong_struct, TestStateMachine, "completed")
   end
 
-  @tag :capture_log
   test "Transition log function should still raise errors if not related to the existence of persist/1 method" do
     wrong_struct = %TestStruct{my_state: "created", force_exception: true}
 
-    assert_raise UndefinedFunctionError, fn ->
-      Machinery.transition_to(wrong_struct, TestStateMachineWithGuard, "partial")
-    end
+    assert {:error, _cause} =
+             Machinery.transition_to(wrong_struct, TestStateMachineWithGuard, "partial")
   end
 
   test "Transition log function should be called after the transition" do
     struct = %TestStruct{my_state: "created"}
     assert {:ok, _} = Machinery.transition_to(struct, TestStateMachineWithGuard, "partial")
-  end
-
-  @tag :capture_log
-  test "Machinery.Transitions GenServer should be started under the Machinery.Supervisor" do
-    transitions_pid = Process.whereis(Machinery.Transitions)
-    assert Process.alive?(transitions_pid)
   end
 
   test "Should use default state name if not specified" do

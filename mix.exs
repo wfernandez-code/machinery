@@ -18,7 +18,7 @@ defmodule Machinery.Mixfile do
 
   def application do
     [
-      mod: {Machinery, []}
+      extra_applications: [:logger]
     ]
   end
 

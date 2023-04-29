@@ -65,16 +65,6 @@ defmodule Machinery do
   end
 
   @doc """
-  Start function that will trigger a supervisor for the Machinery.Transitions, a
-  GenServer that controls the state transitions.
-  """
-  def start(_type, _args) do
-    children = [{Machinery.Transitions, name: Machinery.Transitions}]
-    opts = [strategy: :one_for_one, name: Machinery.Supervisor]
-    Supervisor.start_link(children, opts)
-  end
-
-  @doc """
   Triggers the transition of a struct to a new state, accordingly to a specific
   state machine module, if it passes any existing guard functions.
   It also runs any before or after callbacks and returns a tuple with
@@ -99,14 +89,11 @@ defmodule Machinery do
   """
   @spec transition_to(struct, module, String.t(), map()) :: {:ok, struct} | {:error, String.t()}
   def transition_to(struct, state_machine_module, next_state, extra_metadata \\ None) do
-    Machinery.Transitions.run(struct, state_machine_module, next_state, extra_metadata)
+    try do
+      Machinery.Transitions.run(struct, state_machine_module, next_state, extra_metadata)
+    rescue
+      err ->
+        {:error, "cause: #{inspect(err)}"}
+    end
   end
-
-  defp deep_first_of_tuple(tuple) when is_tuple(tuple) do
-    tuple
-    |> elem(0)
-    |> deep_first_of_tuple
-  end
-
-  defp deep_first_of_tuple(value), do: value
 end

@@ -1,29 +1,12 @@
 defmodule Machinery.Transitions do
   @moduledoc """
-  This is a GenServer that controls the transitions for a struct
-  using a set of helper functions from Machinery.Transition
-  It's meant to be run by a supervisor.
+  This is a module that controls the transitions for a struct
+  using a set of helper functions from Machinery.Transition.
   """
 
-  use GenServer
   alias Machinery.Transition
 
   @not_declated_error "Transition to this state isn't declared."
-
-  def init(args) do
-    {:ok, args}
-  end
-
-  @doc false
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, :ok, opts)
-  end
-
-  @doc false
-  def handle_call({:run, struct, state_machine_module, next_state, extra_metadata}, _from, states) do
-    response = run(struct, state_machine_module, next_state, extra_metadata)
-    {:reply, response, states}
-  end
 
   @doc """
   Run process
@@ -52,18 +35,18 @@ defmodule Machinery.Transitions do
       if guarded_transition? do
         guarded_transition?
       else
-        struct =
+        response_struct =
           struct
           |> Transition.before_callbacks(next_state, state_machine_module, extra_metadata)
           |> Transition.persist_struct(next_state, state_machine_module, extra_metadata)
           |> Transition.log_transition(next_state, state_machine_module, extra_metadata)
           |> Transition.after_callbacks(next_state, state_machine_module, extra_metadata)
 
-        case struct do
+        case response_struct do
           {:error, cause} ->
             {:error, cause}
 
-          _ ->
+          struct ->
             {:ok, struct}
         end
       end
