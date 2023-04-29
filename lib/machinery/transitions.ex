@@ -59,7 +59,13 @@ defmodule Machinery.Transitions do
           |> Transition.log_transition(next_state, state_machine_module, extra_metadata)
           |> Transition.after_callbacks(next_state, state_machine_module, extra_metadata)
 
-        {:ok, struct}
+        case struct do
+          {:error, cause} ->
+            {:error, cause}
+
+          _ ->
+            {:ok, struct}
+        end
       end
     else
       {:error, @not_declated_error}
