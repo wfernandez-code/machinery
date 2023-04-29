@@ -99,21 +99,7 @@ defmodule Machinery do
   """
   @spec transition_to(struct, module, String.t(), map()) :: {:ok, struct} | {:error, String.t()}
   def transition_to(struct, state_machine_module, next_state, extra_metadata \\ None) do
-    GenServer.call(
-      Machinery.Transitions,
-      {
-        :run,
-        struct,
-        state_machine_module,
-        next_state,
-        extra_metadata
-      },
-      :infinity
-    )
-  catch
-    :exit, error_tuple ->
-      exception = deep_first_of_tuple(error_tuple)
-      raise exception
+    Machinery.Transitions.run(struct, state_machine_module, next_state, extra_metadata)
   end
 
   defp deep_first_of_tuple(tuple) when is_tuple(tuple) do

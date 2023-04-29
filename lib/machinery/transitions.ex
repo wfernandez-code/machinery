@@ -21,6 +21,14 @@ defmodule Machinery.Transitions do
 
   @doc false
   def handle_call({:run, struct, state_machine_module, next_state, extra_metadata}, _from, states) do
+    response = run(struct, state_machine_module, next_state, extra_metadata)
+    {:reply, response, states}
+  end
+
+  @doc """
+  Run process
+  """
+  def run(struct, state_machine_module, next_state, extra_metadata) do
     initial_state = state_machine_module._machinery_initial_state()
     transitions = state_machine_module._machinery_transitions()
     state_field = state_machine_module._field()
@@ -37,27 +45,24 @@ defmodule Machinery.Transitions do
     # actually updating the struct and retuning the tuple.
     declared_transition? = Transition.declared_transition?(transitions, current_state, next_state)
 
-    response =
-      if declared_transition? do
-        guarded_transition? =
-          Transition.guarded_transition?(state_machine_module, struct, next_state, extra_metadata)
+    if declared_transition? do
+      guarded_transition? =
+        Transition.guarded_transition?(state_machine_module, struct, next_state, extra_metadata)
 
-        if guarded_transition? do
-          guarded_transition?
-        else
-          struct =
-            struct
-            |> Transition.before_callbacks(next_state, state_machine_module, extra_metadata)
-            |> Transition.persist_struct(next_state, state_machine_module, extra_metadata)
-            |> Transition.log_transition(next_state, state_machine_module, extra_metadata)
-            |> Transition.after_callbacks(next_state, state_machine_module, extra_metadata)
-
-          {:ok, struct}
-        end
+      if guarded_transition? do
+        guarded_transition?
       else
-        {:error, @not_declated_error}
-      end
+        struct =
+          struct
+          |> Transition.before_callbacks(next_state, state_machine_module, extra_metadata)
+          |> Transition.persist_struct(next_state, state_machine_module, extra_metadata)
+          |> Transition.log_transition(next_state, state_machine_module, extra_metadata)
+          |> Transition.after_callbacks(next_state, state_machine_module, extra_metadata)
 
-    {:reply, response, states}
+        {:ok, struct}
+      end
+    else
+      {:error, @not_declated_error}
+    end
   end
 end
